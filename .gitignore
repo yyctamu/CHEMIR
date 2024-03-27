@@ -1,2 +1,3 @@
 GNN/data
-jtvae/data
+jtvae/data/zinc/train
+jtvae/outputs

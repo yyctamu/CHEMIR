@@ -23,8 +23,9 @@
             "justMyCode": true,
             "args":
             ["--train=data/zinc/train",
-            "--vocab=data/zinc/vocab.txt",
-            "--save_dir=outputs/DEBUG"]
+            "--vocab=data/zinc/new_vocab.txt",
+            "--save_dir=outputs/DEBUG", 
+            "--num_workers=0"]
         }
     ]
 }

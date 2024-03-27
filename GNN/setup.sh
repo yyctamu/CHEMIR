@@ -7,6 +7,6 @@ pip install rdkit-pypi==2020.9.5.2
 # pip install "numpy>1.20.3"
 # pip install pytorch-lightning==1.7.7
 # pip install  torchmetrics==0.11.4
-pip install jupyter
+pip install jupyter gpustat scipy tqdm tensorboard
 ipython kernel install --name "ir" --user
 echo done

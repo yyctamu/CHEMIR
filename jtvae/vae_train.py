@@ -14,6 +14,11 @@ import pickle as pickle
 from fast_jtnn import *
 import rdkit
 
+from tqdm import tqdm
+
+from torch.utils.tensorboard import SummaryWriter
+
+
 lg = rdkit.RDLogger.logger() 
 lg.setLevel(rdkit.RDLogger.CRITICAL)
 
@@ -22,6 +27,7 @@ parser.add_argument('--train', required=True)
 parser.add_argument('--vocab', required=True)
 parser.add_argument('--save_dir', required=True)
 parser.add_argument('--load_epoch', type=int, default=0)
+parser.add_argument('--num_workers', type=int, default=4)
 
 parser.add_argument('--hidden_size', type=int, default=450)
 parser.add_argument('--batch_size', type=int, default=32)
@@ -45,6 +51,8 @@ parser.add_argument('--save_iter', type=int, default=5000)
 
 args = parser.parse_args()
 print(args)
+
+writer = SummaryWriter(args.save_dir)
 
 vocab = [x.strip("\r\n ") for x in open(args.vocab)] 
 vocab = Vocab(vocab)
@@ -71,29 +79,42 @@ param_norm = lambda m: math.sqrt(sum([p.norm().item() ** 2 for p in m.parameters
 grad_norm = lambda m: math.sqrt(sum([p.grad.norm().item() ** 2 for p in m.parameters() if p.grad is not None]))
 
 total_step = args.load_epoch
+epoch_step = 0
 beta = args.beta
-meters = np.zeros(4)
+meters = np.zeros(5)
+epoch_meters = np.zeros(5)
 
-for epoch in range(args.epoch):
-    loader = MolTreeFolder(args.train, vocab, args.batch_size, num_workers=4)
-    for batch in loader:
+for epoch in tqdm(range(args.epoch)):
+    loader = MolTreeFolder(args.train, vocab, args.batch_size, num_workers=args.num_workers)
+    progress = tqdm(loader)
+    for batch in progress:
         total_step += 1
-        try:
-            model.zero_grad()
-            loss, kl_div, wacc, tacc, sacc = model(batch, beta)
-            loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), args.clip_norm)
-            optimizer.step()
-        except Exception as e:
-            print(e)
-            continue
+        epoch_step += 1
+        # try:
+        model.zero_grad()
+        loss, kl_div, wacc, tacc, sacc = model(batch, beta)
+        loss.backward()
+        nn.utils.clip_grad_norm_(model.parameters(), args.clip_norm)
+        optimizer.step()
+        # except Exception as e:
+        #     print(e)
+        #     continue
 
-        meters = meters + np.array([kl_div, wacc * 100, tacc * 100, sacc * 100])
+        losses = np.array([loss.item(), kl_div, wacc * 100, tacc * 100, sacc * 100])
+        meters = meters + losses
+        epoch_meters = epoch_meters + losses
 
         if total_step % args.print_iter == 0:
             meters /= args.print_iter
-            print("[%d] Beta: %.3f, KL: %.2f, Word: %.2f, Topo: %.2f, Assm: %.2f, PNorm: %.2f, GNorm: %.2f" % (total_step, beta, meters[0], meters[1], meters[2], meters[3], param_norm(model), grad_norm(model)))
-            sys.stdout.flush()
+            writer.add_scalar("step/loss", meters[0], total_step)
+            writer.add_scalar("step/KL", meters[1], total_step)
+            writer.add_scalar("step/word", meters[2], total_step)
+            writer.add_scalar("step/topo", meters[3], total_step)
+            writer.add_scalar("step/assm", meters[4], total_step)
+            writer.add_scalar("step/param norm", param_norm(model), total_step)
+            writer.add_scalar("step/grad norm", grad_norm(model), total_step)
+            # print("[%d] Beta: %.3f, KL: %.2f, Word: %.2f, Topo: %.2f, Assm: %.2f, PNorm: %.2f, GNorm: %.2f" % (total_step, beta, meters[0], meters[1], meters[2], meters[3], param_norm(model), grad_norm(model)))
+            # sys.stdout.flush()
             meters *= 0
 
         if total_step % args.save_iter == 0:
@@ -101,7 +122,24 @@ for epoch in range(args.epoch):
 
         if total_step % args.anneal_iter == 0:
             scheduler.step()
-            print("learning rate: %.6f" % scheduler.get_lr()[0])
+            writer.add_scalar("step/LR", scheduler.get_lr()[0], total_step)
+            # print("learning rate: %.6f" % scheduler.get_lr()[0])
 
         if total_step % args.kl_anneal_iter == 0 and total_step >= args.warmup:
             beta = min(args.max_beta, beta + args.step_beta)
+            writer.add_scalar("step/beta", beta, total_step)
+
+        loss_str = f'Loss: {losses[0]:.3e} - KL: {losses[1]:.3e} - word: {losses[2]:.3e} - topo: {losses[3]:.3e} - assm: {losses[4]:.3e}'
+        progress.set_postfix_str(loss_str)
+
+    epoch_meters /= epoch_step
+    epoch_step = 0
+    writer.add_scalar("epoch/loss", epoch_meters[0], epoch)
+    writer.add_scalar("epoch/KL", epoch_meters[1], epoch)
+    writer.add_scalar("epoch/word", epoch_meters[2], epoch)
+    writer.add_scalar("epoch/topo", epoch_meters[3], epoch)
+    writer.add_scalar("epoch/assm", epoch_meters[4], epoch)
+    epoch_meters *= 0
+
+torch.save(model.state_dict(), args.save_dir + "/model.iter-" + str(total_step))
+writer.flush()
