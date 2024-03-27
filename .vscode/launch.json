@@ -1,0 +1,30 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "loader",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "/mnt/data/shared/jacob/CHEMIR/GNN/preprocessed_vocab.py",
+            "console": "integratedTerminal",
+            "cwd": "/mnt/data/shared/jacob/CHEMIR/GNN",
+            "justMyCode": false
+        },
+        {
+            "name": "jtvae",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "vae_train.py",
+            "console": "integratedTerminal",
+            "cwd": "/mnt/data/shared/jacob/CHEMIR/jtvae/",
+            "justMyCode": true,
+            "args":
+            ["--train=data/zinc/train",
+            "--vocab=data/zinc/vocab.txt",
+            "--save_dir=outputs/DEBUG"]
+        }
+    ]
+}
