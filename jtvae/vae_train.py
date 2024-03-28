@@ -5,7 +5,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 
-import math, random, sys
+import math, random, sys, os
 import numpy as np
 import argparse
 from collections import deque
@@ -28,6 +28,7 @@ parser.add_argument('--vocab', required=True)
 parser.add_argument('--save_dir', required=True)
 parser.add_argument('--load_epoch', type=int, default=0)
 parser.add_argument('--num_workers', type=int, default=4)
+parser.add_argument('--seed', type=int, default=42)
 
 parser.add_argument('--hidden_size', type=int, default=450)
 parser.add_argument('--batch_size', type=int, default=32)
@@ -52,6 +53,15 @@ parser.add_argument('--save_iter', type=int, default=5000)
 args = parser.parse_args()
 print(args)
 
+# https://gist.github.com/ihoromi4/b681a9088f348942b01711f251e5f964
+random.seed(args.seed)
+os.environ['PYTHONHASHSEED'] = str(args.seed)
+np.random.seed(args.seed)
+torch.manual_seed(args.seed)
+torch.cuda.manual_seed(args.seed)
+# torch.backends.cudnn.deterministic = True
+# torch.backends.cudnn.benchmark = True
+
 writer = SummaryWriter(args.save_dir)
 
 vocab = [x.strip("\r\n ") for x in open(args.vocab)] 
@@ -73,7 +83,7 @@ print("Model #Params: %dK" % (sum([x.nelement() for x in model.parameters()]) / 
 
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 scheduler = lr_scheduler.ExponentialLR(optimizer, args.anneal_rate)
-scheduler.step()
+# scheduler.step()
 
 param_norm = lambda m: math.sqrt(sum([p.norm().item() ** 2 for p in m.parameters()]))
 grad_norm = lambda m: math.sqrt(sum([p.grad.norm().item() ** 2 for p in m.parameters() if p.grad is not None]))
@@ -84,6 +94,9 @@ beta = args.beta
 meters = np.zeros(5)
 epoch_meters = np.zeros(5)
 
+writer.add_scalar("step/LR", scheduler.get_lr()[0], total_step)
+writer.add_scalar("step/beta", beta, total_step)
+
 for epoch in tqdm(range(args.epoch)):
     loader = MolTreeFolder(args.train, vocab, args.batch_size, num_workers=args.num_workers)
     progress = tqdm(loader)
@@ -93,6 +106,7 @@ for epoch in tqdm(range(args.epoch)):
         # try:
         model.zero_grad()
         loss, kl_div, wacc, tacc, sacc = model(batch, beta)
+        del batch
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), args.clip_norm)
         optimizer.step()
@@ -105,6 +119,7 @@ for epoch in tqdm(range(args.epoch)):
         epoch_meters = epoch_meters + losses
 
         if total_step % args.print_iter == 0:
+            torch.cuda.empty_cache()
             meters /= args.print_iter
             writer.add_scalar("step/loss", meters[0], total_step)
             writer.add_scalar("step/KL", meters[1], total_step)
@@ -132,6 +147,9 @@ for epoch in tqdm(range(args.epoch)):
         loss_str = f'Loss: {losses[0]:.3e} - KL: {losses[1]:.3e} - word: {losses[2]:.3e} - topo: {losses[3]:.3e} - assm: {losses[4]:.3e}'
         progress.set_postfix_str(loss_str)
 
+        # del loss, batch
+        # torch.cuda.empty_cache()
+
     epoch_meters /= epoch_step
     epoch_step = 0
     writer.add_scalar("epoch/loss", epoch_meters[0], epoch)
@@ -143,3 +161,8 @@ for epoch in tqdm(range(args.epoch)):
 
 torch.save(model.state_dict(), args.save_dir + "/model.iter-" + str(total_step))
 writer.flush()
+
+# CUDA_VISIBLE_DEVICES=0 python vae_train.py --train=data/zinc/train --vocab=data/zinc/new_vocab.txt --save_dir=outputs/max_beta0 --num_workers=16 --max_beta=0
+# CUDA_VISIBLE_DEVICES=1 python vae_train.py --train=data/zinc/train --vocab=data/zinc/new_vocab.txt --save_dir=outputs/max_beta0.01 --num_workers=8 --max_beta=0.01
+# CUDA_VISIBLE_DEVICES=2 python vae_train.py --train=data/zinc/train --vocab=data/zinc/new_vocab.txt --save_dir=outputs/max_beta0.1 --num_workers=4 --max_beta=0.1
+

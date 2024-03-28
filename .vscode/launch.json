@@ -25,7 +25,7 @@
             ["--train=data/zinc/train",
             "--vocab=data/zinc/new_vocab.txt",
             "--save_dir=outputs/DEBUG", 
-            "--num_workers=0"]
+            "--num_workers=32", "--print_iter=1"]
         }
     ]
 }
