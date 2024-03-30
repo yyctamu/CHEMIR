@@ -97,58 +97,66 @@ epoch_meters = np.zeros(5)
 writer.add_scalar("step/LR", scheduler.get_lr()[0], total_step)
 writer.add_scalar("step/beta", beta, total_step)
 
+nOOM = 0
+
 for epoch in tqdm(range(args.epoch)):
     loader = MolTreeFolder(args.train, vocab, args.batch_size, num_workers=args.num_workers)
     progress = tqdm(loader)
     for batch in progress:
-        total_step += 1
-        epoch_step += 1
-        # try:
-        model.zero_grad()
-        loss, kl_div, wacc, tacc, sacc = model(batch, beta)
-        del batch
-        loss.backward()
-        nn.utils.clip_grad_norm_(model.parameters(), args.clip_norm)
-        optimizer.step()
-        # except Exception as e:
-        #     print(e)
-        #     continue
+        try:
+            total_step += 1
+            epoch_step += 1
+            # try:
+            model.zero_grad()
+            loss, kl_div, wacc, tacc, sacc = model(batch, beta)
+            # del batch
+            loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), args.clip_norm)
+            optimizer.step()
+            # except Exception as e:
+            #     print(e)
+            #     continue
 
-        losses = np.array([loss.item(), kl_div, wacc * 100, tacc * 100, sacc * 100])
-        meters = meters + losses
-        epoch_meters = epoch_meters + losses
+            losses = np.array([loss.item(), kl_div, wacc * 100, tacc * 100, sacc * 100])
+            meters = meters + losses
+            epoch_meters = epoch_meters + losses
 
-        if total_step % args.print_iter == 0:
+            if total_step % args.print_iter == 0:
+                torch.cuda.empty_cache()
+                meters /= args.print_iter
+                writer.add_scalar("step/loss", meters[0], total_step)
+                writer.add_scalar("step/KL", meters[1], total_step)
+                writer.add_scalar("step/word", meters[2], total_step)
+                writer.add_scalar("step/topo", meters[3], total_step)
+                writer.add_scalar("step/assm", meters[4], total_step)
+                writer.add_scalar("step/param norm", param_norm(model), total_step)
+                writer.add_scalar("step/grad norm", grad_norm(model), total_step)
+                # print("[%d] Beta: %.3f, KL: %.2f, Word: %.2f, Topo: %.2f, Assm: %.2f, PNorm: %.2f, GNorm: %.2f" % (total_step, beta, meters[0], meters[1], meters[2], meters[3], param_norm(model), grad_norm(model)))
+                # sys.stdout.flush()
+                meters *= 0
+
+            if total_step % args.save_iter == 0:
+                torch.save(model.state_dict(), args.save_dir + "/model.iter-" + str(total_step))
+
+            if total_step % args.anneal_iter == 0:
+                scheduler.step()
+                writer.add_scalar("step/LR", scheduler.get_lr()[0], total_step)
+                # print("learning rate: %.6f" % scheduler.get_lr()[0])
+
+            if total_step % args.kl_anneal_iter == 0 and total_step >= args.warmup:
+                beta = min(args.max_beta, beta + args.step_beta)
+                writer.add_scalar("step/beta", beta, total_step)
+
+            loss_str = f'Loss: {losses[0]:.3e} - KL: {losses[1]:.3e} - word: {losses[2]:.3e} - topo: {losses[3]:.3e} - assm: {losses[4]:.3e}'
+            progress.set_postfix_str(loss_str)
+
+            # del loss, batch
+            # torch.cuda.empty_cache()
+        except torch.cuda.OutOfMemoryError:
+            nOOM += 1
+            writer.add_scalar("step/OOM", nOOM, total_step)
             torch.cuda.empty_cache()
-            meters /= args.print_iter
-            writer.add_scalar("step/loss", meters[0], total_step)
-            writer.add_scalar("step/KL", meters[1], total_step)
-            writer.add_scalar("step/word", meters[2], total_step)
-            writer.add_scalar("step/topo", meters[3], total_step)
-            writer.add_scalar("step/assm", meters[4], total_step)
-            writer.add_scalar("step/param norm", param_norm(model), total_step)
-            writer.add_scalar("step/grad norm", grad_norm(model), total_step)
-            # print("[%d] Beta: %.3f, KL: %.2f, Word: %.2f, Topo: %.2f, Assm: %.2f, PNorm: %.2f, GNorm: %.2f" % (total_step, beta, meters[0], meters[1], meters[2], meters[3], param_norm(model), grad_norm(model)))
-            # sys.stdout.flush()
-            meters *= 0
 
-        if total_step % args.save_iter == 0:
-            torch.save(model.state_dict(), args.save_dir + "/model.iter-" + str(total_step))
-
-        if total_step % args.anneal_iter == 0:
-            scheduler.step()
-            writer.add_scalar("step/LR", scheduler.get_lr()[0], total_step)
-            # print("learning rate: %.6f" % scheduler.get_lr()[0])
-
-        if total_step % args.kl_anneal_iter == 0 and total_step >= args.warmup:
-            beta = min(args.max_beta, beta + args.step_beta)
-            writer.add_scalar("step/beta", beta, total_step)
-
-        loss_str = f'Loss: {losses[0]:.3e} - KL: {losses[1]:.3e} - word: {losses[2]:.3e} - topo: {losses[3]:.3e} - assm: {losses[4]:.3e}'
-        progress.set_postfix_str(loss_str)
-
-        # del loss, batch
-        # torch.cuda.empty_cache()
 
     epoch_meters /= epoch_step
     epoch_step = 0
@@ -166,3 +174,6 @@ writer.flush()
 # CUDA_VISIBLE_DEVICES=1 python vae_train.py --train=data/zinc/train --vocab=data/zinc/new_vocab.txt --save_dir=outputs/max_beta0.01 --num_workers=8 --max_beta=0.01
 # CUDA_VISIBLE_DEVICES=2 python vae_train.py --train=data/zinc/train --vocab=data/zinc/new_vocab.txt --save_dir=outputs/max_beta0.1 --num_workers=4 --max_beta=0.1
 
+# CUDA_VISIBLE_DEVICES=3 python vae_train.py --train=data/zinc/train --vocab=data/zinc/new_vocab.txt --save_dir=outputs/max_beta0.01_v2 --num_workers=8 --max_beta=0.01
+# CUDA_VISIBLE_DEVICES=4 python vae_train.py --train=data/zinc/train --vocab=data/zinc/new_vocab.txt --save_dir=outputs/max_beta0.1_v2 --num_workers=4 --max_beta=0.1
+# CUDA_VISIBLE_DEVICES=1 python vae_train.py --train=data/zinc/train --vocab=data/zinc/new_vocab.txt --save_dir=outputs/max_beta0_v2 --num_workers=8 --max_beta=0
