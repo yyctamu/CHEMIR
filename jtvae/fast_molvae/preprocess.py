@@ -11,10 +11,10 @@ import rdkit
 import datetime
 i=0
 def tensorize(smiles, assm=True):
-    global i
-    i += 1
-    if i % 1000 == 0:
-        print(i, datetime.datetime.now())
+    # global i
+    # i += 1
+    # if i % 1000 == 0:
+    #     print(i, datetime.datetime.now())
 
     mol_tree = MolTree(smiles)
     mol_tree.recover()
