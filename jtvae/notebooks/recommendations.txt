@@ -1,0 +1,15 @@
+C#CCC(C)(C)OC[C@@H](O)C[NH+]1CCCC[C@@H]1C,N[C@H](c1ccc(OCc2ccc(Cl)c(Cl)c2)cc1)C(F)(F)F,CC(c1ccc(F)c(Cl)c1)[NH+]1CCCCC1CC(O)CO
+COc1ccc(C(=O)NC2C[C@@H]3CCC[C@H](C2)[NH+]3C)cc1OC(F)F,COC[C@H](Nc1cnn(C)c(=O)c1Cl)c1ccc(F)c(F)c1,COCC(=O)Nc1cc(N2N=C(C(F)F)C([NH3+])C2=S)ccc1F
+CCn1nc(C)c(CNC(=O)c2nn(CC)c3ccc(Cl)cc3c2=O)c1C,O=C(Nc1ccc(-n2cncn2)cc1C(F)(F)F)N1CCC([C@@H](O)c2ccccc2)CC1,Cc1cc(F)ccc1NC(=O)Cn1nc(C)c2c1NC(=O)CC2C(c1cccc(Cl)c1)N1CCOCC1
+O=S(=O)(c1ccc(Cl)cc1)N1CCC(OCc2ccccc2F)CC1,CCN(C1CCN([C@H](C(=O)OC)c2ccc(F)cc2)CC1)S(C)(=O)=O,CC1CCN(S(=O)(=O)c2ccc(N(CC#N)C(F)Br)cc2)CC1
+COc1ccc(CNC(=O)[C@H]2CCC[NH+](Cc3ccco3)C2)c(F)c1F,CCC[C@H]1C[C@H]1NC(=O)Cn1cnc2ccc(Br)cc2c1=O,CS(=O)(=O)NCCc1ccc(NC(=O)C[NH+]2CCCC(Br)C2)cc1F
+C[C@H](c1nccs1)[C@H]1CC[NH+]2CCC[C@H]12,C[C@H]1CCCC[NH+]1Cc1ccccc1CNc1ccc2nnc(C(F)(F)F)n2n1,Cc1nc(C(=O)N2CCCCC2c2nccn2Cc2ccccc2F)cs1
+CC[S@@](=O)[C@@H]1CCC[C@H](NC(=O)N2CCS(=O)(=O)CC2)C1,COc1ccc(C(=O)NC2C[C@@H]3CCC[C@H](C2)[NH+]3C)cc1OC(F)F,CCOC(=O)C1CCCC(NC(=S)Nc2ccccc2F)C1
+COc1ccccc1CN(C)[C@@](C)(C[NH3+])C1(C)CC1,CCCN[C@H](C)c1cc[nH+]c(N(C)Cc2csc(Br)c2)c1,CCNC(C)c1oc(Br)cc1CN(C)CC1CC1
+[NH3+][C@H]1C=C(Cc2nc3ccccc3s2)CC1,C[C@@H](Cl)c1nc2cc(Br)cnc2n1C,CS(=O)(=O)NCc1ncccc1Br
+COC(=O)c1ncn2c1C(=O)N(Cc1cccc(C)c1)[C@](C)(C(=O)NC1CCCCCC1)C2,O=C(COC1CCCC1)NNC(=O)c1ccc(F)cc1Br,CC(Br)CON1CC(=O)N(CC(=O)c2ccc(Br)cc2)C1=O
+CC[C@](C)(NCc1cc(Cl)nc(Cl)c1)c1nc(C)cs1,C[C@H]1C[C@@H]1c1ccc(/C=C/C(=O)NCCN2CCS(=O)(=O)CC2)o1,CC1CC1C(C)[NH2+]CCC1=CC(=O)N(c2cccc(Cl)c2)CC1
+CCn1nc(C)c(CNC(=O)c2nn(CC)c3ccc(Cl)cc3c2=O)c1C,O=C(Nc1ccc(-n2cncn2)cc1C(F)(F)F)N1CCC([C@@H](O)c2ccccc2)CC1,Cc1cc(F)ccc1NC(=O)Cn1nc(C)c2c1N=C(N1CCCC1)NC2c1cccc(F)c1
+CN(C)C(=O)c1cc(NC(=O)C[C@@H](O)c2ccc(Cl)cc2)ccn1,O=C([O-])/C=C\[NH+]1[C@H]2CC[C@@H]1CC(O)C2,NC(=O)C[NH+]1C2CCC1CC(O)(CNc1ccc(Cl)cn1)C2
+COc1ccc(CNC(=O)[C@H]2CCC[NH+](Cc3ccco3)C2)c(F)c1F,CCC[C@H]1C[C@H]1NC(=O)Cn1cnc2ccc(Br)cc2c1=O,O=C1CCC(C(=O)NCc2ccc(OCC3CC3)c(F)c2)O1
+Clc1ccccc1/C=C\c1nc2ccccc2s1,O=S(=O)(c1ccc(Cl)cc1)N1CCC(OCc2ccccc2F)CC1,O=S(=O)(NC1CC1)c1ccc(COc2nc3cc(Cl)ccc3s2)cc1
