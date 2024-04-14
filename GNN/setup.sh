@@ -11,3 +11,8 @@ pip install jupyter gpustat scipy tqdm tensorboard
 pip install protobuf==4.25.3
 ipython kernel install --name "ir" --user
 echo done
+
+conda create -n rdkit python=3.8 -y
+conda activate rdkit
+pip install rdkit jupyter
+ipython kernel install --name "rdkit" --user
